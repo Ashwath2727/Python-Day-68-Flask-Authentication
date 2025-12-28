@@ -1,45 +1,50 @@
+from urllib.parse import quote
+
 from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+
+from extensions import db
+from models.user import User
+from queries.user_queries import UserQueries
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret-key-goes-here'
 
 # CREATE DATABASE
+DB_NAME = "postgres"
+DB_USER = "postgres"
+DB_PASSWORD = quote("ashwath@MVN123")
+DB_HOST = "localhost"
 
+SQLALCHEMY_DB_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DB_URI
+app.config["SQLALCHEMY_ECHO"] = True
 
-class Base(DeclarativeBase):
-    pass
-
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
-# CREATE TABLE IN DB
-
-
-class User(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(100), unique=True)
-    password: Mapped[str] = mapped_column(String(100))
-    name: Mapped[str] = mapped_column(String(1000))
-
-
-with app.app_context():
-    db.create_all()
-
+user = User()
+user_queries = UserQueries()
 
 @app.route('/')
 def home():
     return render_template("index.html")
 
 
-@app.route('/register')
+@app.route('/register', methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        username = request.form["name"]
+        password = request.form["password"]
+        email = request.form["email"]
+
+        print(username, password, email)
+
+        new_user = User(name=username, password=password, email=email)
+
+        result = user_queries.add_user(new_user)
+
+        return redirect(url_for("secrets", name=username))
     return render_template("register.html")
 
 
@@ -50,7 +55,8 @@ def login():
 
 @app.route('/secrets')
 def secrets():
-    return render_template("secrets.html")
+    name = request.args.get("name")
+    return render_template("secrets.html", name=name)
 
 
 @app.route('/logout')
@@ -64,4 +70,8 @@ def download():
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        print("=========================> creating tables")
+        db.create_all()
+        print("=========================> finished creating tables")
     app.run(debug=True)
