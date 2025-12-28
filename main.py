@@ -37,7 +37,7 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
-    return render_template("index.html")
+    return render_template("index.html", logged_in=current_user.is_authenticated)
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -62,7 +62,7 @@ def register():
         login_user(new_user)
 
         return redirect(url_for("secrets"))
-    return render_template("register.html")
+    return render_template("register.html", logged_in=current_user.is_authenticated)
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -92,7 +92,7 @@ def login():
                 return redirect(url_for("login"))
 
 
-    return render_template("login.html")
+    return render_template("login.html", logged_in=current_user.is_authenticated)
 
 
 @app.route('/secrets')
@@ -101,7 +101,7 @@ def secrets():
     print("====================> calling secrets")
     print(current_user.name)
     # name = request.args.get("name")
-    return render_template("secrets.html", name=current_user.name)
+    return render_template("secrets.html", name=current_user.name, logged_in=True)
 
 
 @app.route('/logout')
