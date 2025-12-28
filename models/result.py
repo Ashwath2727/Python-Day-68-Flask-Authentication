@@ -7,4 +7,4 @@ class Result:
         self.code = code
 
     def get_message(self):
-        return {"res": self.res, "status": {f"{self.state}: {self.message}"}, "code": self.code}
+        return {"res": self.res, "state": f"{self.state}", "status": {f"{self.state}": f"{self.message}"}, "code": self.code}

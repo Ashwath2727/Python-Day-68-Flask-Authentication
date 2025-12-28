@@ -2,7 +2,7 @@ from urllib.parse import quote
 
 from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from flask_login import login_user, LoginManager, login_required, current_user, logout_user
 
 from extensions import db
 from models.user import User
@@ -26,6 +26,15 @@ db.init_app(app)
 user = User()
 user_queries = UserQueries()
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    user_data = user_queries.get_user_by_id(user_id)["res"]
+
+    return user_data
+
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -35,7 +44,7 @@ def home():
 def register():
     if request.method == "POST":
         username = request.form["name"]
-        password = request.form["password"]
+        password = generate_password_hash(request.form["password"], method="pbkdf2:sha256", salt_length=8)
         email = request.form["email"]
 
         print(username, password, email)
@@ -44,29 +53,58 @@ def register():
 
         result = user_queries.add_user(new_user)
 
-        return redirect(url_for("secrets", name=username))
+        login_user(new_user)
+
+        return redirect(url_for("secrets"))
     return render_template("register.html")
 
 
-@app.route('/login')
+@app.route('/login', methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        result = user_queries.get_user_by_email(email)
+
+        if result["state"] == "success":
+            user = result["res"][0]
+            print(f"user logged ======> {user}")
+
+            if check_password_hash(user.password, password):
+                print("Password checking successful")
+                login_user(user)
+
+                return redirect(url_for("secrets"))
+            else:
+                print("Password checking failed")
+
+
     return render_template("login.html")
 
 
 @app.route('/secrets')
+@login_required
 def secrets():
-    name = request.args.get("name")
-    return render_template("secrets.html", name=name)
+    print("====================> calling secrets")
+    print(current_user.name)
+    # name = request.args.get("name")
+    return render_template("secrets.html", name=current_user.name)
 
 
 @app.route('/logout')
 def logout():
-    pass
+    print("===================> calling logout")
+    logout_user()
+
+    return redirect(url_for("home"))
 
 
 @app.route('/download')
+@login_required
 def download():
-    pass
+    print("====================> calling download")
+    return send_from_directory("static", "files/cheat_sheet.pdf")
 
 
 if __name__ == "__main__":

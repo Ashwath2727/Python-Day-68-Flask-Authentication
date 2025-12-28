@@ -42,7 +42,7 @@ class UserQueries:
                 result_status = Result(user, "error", f"User {name} does not exist", 403)
                 print(result_status.get_message())
                 print("==================> finished getting user by name")
-                return result_status
+                return result_status.get_message()
 
             else:
 
@@ -56,5 +56,52 @@ class UserQueries:
 
         except Exception as e:
             result_status = Result("", "error", f"Error getting user by name: {e}", 500)
+            print(result_status.message)
+            return result_status.get_message()
+
+    def get_user_by_id(self, user_id):
+        try:
+            print("=================> getting user by id")
+            user = User.query.filter_by(id=user_id).all()
+
+            if len(user) == 0:
+                result_status = Result(user, "error", f"User {user_id} does not exist", 403)
+                print(result_status.get_message())
+                print("==================> finished getting user by id")
+                return result_status
+            else:
+                print("==================> finished getting user by id")
+                result_status = Result(user[0], "success", f"User {user_id} already exists in DB", 200)
+                print(result_status.message)
+
+                return result_status.get_message()
+
+        except Exception as e:
+            result_status = Result("", "error", f"Error getting user by id: {e}", 500)
+            print(result_status.message)
+            return result_status.get_message()
+
+
+    def get_user_by_email(self, email):
+        try:
+            print("================> getting user by email")
+
+            user = User.query.filter_by(email=email).all()
+
+            if len(user) == 0:
+                result_status = Result(user, "error", f"User {email} does not exist", 403)
+                print(result_status.get_message())
+
+                print("==================> finished getting user by email")
+                return result_status.get_message()
+
+            else:
+                print("==================> finished getting user by email")
+                result_status = Result(user, "success", f"User with email {email} found in DB", 200)
+                print(result_status.get_message())
+                return result_status.get_message()
+
+        except Exception as e:
+            result_status = Result("", "error", f"Error getting user by email: {e}", 500)
             print(result_status.message)
             return result_status.get_message()
