@@ -47,6 +47,12 @@ def register():
         password = generate_password_hash(request.form["password"], method="pbkdf2:sha256", salt_length=8)
         email = request.form["email"]
 
+        user_by_email = user_queries.get_user_by_email(email)["res"]
+
+        if len(user_by_email) != 0:
+            flash("You have already signed up with that email, log in instead!")
+            return redirect(url_for("login"))
+
         print(username, password, email)
 
         new_user = User(name=username, password=password, email=email)
@@ -67,6 +73,10 @@ def login():
 
         result = user_queries.get_user_by_email(email)
 
+        if len(result["res"]) == 0:
+            flash("That email doesn't exist, Please try again!")
+            return redirect(url_for("login"))
+
         if result["state"] == "success":
             user = result["res"][0]
             print(f"user logged ======> {user}")
@@ -78,6 +88,8 @@ def login():
                 return redirect(url_for("secrets"))
             else:
                 print("Password checking failed")
+                flash("Password incorrect, try again!")
+                return redirect(url_for("login"))
 
 
     return render_template("login.html")
